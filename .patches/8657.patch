@@ -1,0 +1,180 @@
+From 88097c44a74052961be57e46089b0520b5b50b21 Mon Sep 17 00:00:00 2001
+From: patryk <pmusiala94@gmail.com>
+Date: Thu, 1 Jul 2021 23:10:45 +0200
+Subject: [PATCH 1/2] Add support for +git protocol suffix in npm paths
+
+---
+ __tests__/util/git.js | 37 ++++++++++++++++++++++++++++++++++++-
+ src/util/git.js       |  7 +++----
+ 2 files changed, 39 insertions(+), 5 deletions(-)
+
+diff --git a/__tests__/util/git.js b/__tests__/util/git.js
+index ede805ec8b..fd8547589e 100644
+--- a/__tests__/util/git.js
++++ b/__tests__/util/git.js
+@@ -29,6 +29,11 @@ test('npmUrlToGitUrl', () => {
+     hostname: 'github.com',
+     repository: 'https://github.com/npm-opam/ocamlfind.git',
+   });
++  expect(Git.npmUrlToGitUrl('https+git://github.com/npm-opam/ocamlfind.git')).toEqual({
++    protocol: 'https:',
++    hostname: 'github.com',
++    repository: 'https://github.com/npm-opam/ocamlfind.git',
++  });
+   expect(Git.npmUrlToGitUrl('https://github.com/npm-opam/ocamlfind.git')).toEqual({
+     protocol: 'https:',
+     hostname: 'github.com',
+@@ -44,21 +49,41 @@ test('npmUrlToGitUrl', () => {
+     hostname: 'gitlab.mydomain.tld',
+     repository: 'ssh://git@gitlab.mydomain.tld:10202/project-name/my-package.git',
+   });
++  expect(Git.npmUrlToGitUrl('ssh+git://git@gitlab.mydomain.tld:10202/project-name/my-package.git')).toEqual({
++    protocol: 'ssh:',
++    hostname: 'gitlab.mydomain.tld',
++    repository: 'ssh://git@gitlab.mydomain.tld:10202/project-name/my-package.git',
++  });
+   expect(Git.npmUrlToGitUrl('git+ssh://git@github.com/npm-opam/ocamlfind.git')).toEqual({
+     protocol: 'ssh:',
+     hostname: 'github.com',
+     repository: 'ssh://git@github.com/npm-opam/ocamlfind.git',
+   });
++  expect(Git.npmUrlToGitUrl('ssh+git://git@github.com/npm-opam/ocamlfind.git')).toEqual({
++    protocol: 'ssh:',
++    hostname: 'github.com',
++    repository: 'ssh://git@github.com/npm-opam/ocamlfind.git',
++  });
+   expect(Git.npmUrlToGitUrl('git+ssh://scp-host-nickname:npm-opam/ocamlfind.git')).toEqual({
+     protocol: 'ssh:',
+     hostname: 'scp-host-nickname',
+     repository: 'scp-host-nickname:npm-opam/ocamlfind.git',
+   });
++  expect(Git.npmUrlToGitUrl('ssh+git://scp-host-nickname:npm-opam/ocamlfind.git')).toEqual({
++    protocol: 'ssh:',
++    hostname: 'scp-host-nickname',
++    repository: 'scp-host-nickname:npm-opam/ocamlfind.git',
++  });
+   expect(Git.npmUrlToGitUrl('git+ssh://user@scp-host-nickname:npm-opam/ocamlfind.git')).toEqual({
+     protocol: 'ssh:',
+     hostname: 'scp-host-nickname',
+     repository: 'user@scp-host-nickname:npm-opam/ocamlfind.git',
+   });
++  expect(Git.npmUrlToGitUrl('ssh+git://user@scp-host-nickname:npm-opam/ocamlfind.git')).toEqual({
++    protocol: 'ssh:',
++    hostname: 'scp-host-nickname',
++    repository: 'user@scp-host-nickname:npm-opam/ocamlfind.git',
++  });
+   expect(Git.npmUrlToGitUrl('github:npm-opam/ocamlfind.git#v1.2.3')).toEqual({
+     protocol: 'ssh:',
+     hostname: 'github.com',
+@@ -84,11 +109,21 @@ test('npmUrlToGitUrl', () => {
+     hostname: null,
+     repository: '../ocalmfind.git',
+   });
++  expect(Git.npmUrlToGitUrl('file+git:../ocalmfind.git')).toEqual({
++    protocol: 'file:',
++    hostname: null,
++    repository: '../ocalmfind.git',
++  });
+   expect(Git.npmUrlToGitUrl('git+file:../ocalmfind')).toEqual({
+     protocol: 'file:',
+     hostname: null,
+     repository: '../ocalmfind',
+   });
++  expect(Git.npmUrlToGitUrl('file+git:../ocalmfind')).toEqual({
++    protocol: 'file:',
++    hostname: null,
++    repository: '../ocalmfind',
++  });
+ });
+ 
+ describe('secureGitUrl()', function() {
+@@ -147,7 +182,7 @@ describe('secureGitUrl()', function() {
+         {
+           type: 'warning',
+           error: true,
+-          data: reporter.lang(protocol == 'git:' ? 'downloadGitWithoutCommit' : 'downloadHTTPWithoutCommit', inputurl),
++          data: reporter.lang(protocol === 'git:' ? 'downloadGitWithoutCommit' : 'downloadHTTPWithoutCommit', inputurl),
+         },
+       ]);
+     }
+diff --git a/src/util/git.js b/src/util/git.js
+index e68d7afc24..a9b244481c 100644
+--- a/src/util/git.js
++++ b/src/util/git.js
+@@ -16,9 +16,8 @@ import {resolveVersion, isCommitSha, parseRefs} from './git/git-ref-resolver.js'
+ import * as crypto from './crypto.js';
+ import * as fs from './fs.js';
+ import map from './map.js';
+-import {removePrefix} from './misc.js';
+ 
+-const GIT_PROTOCOL_PREFIX = 'git+';
++const GIT_PROTOCOL_FRAGMENT = /(git\+)|(\+git)/;
+ const SSH_PROTOCOL = 'ssh:';
+ const SCP_PATH_PREFIX = '/:';
+ const FILE_PROTOCOL = 'file:';
+@@ -87,11 +86,11 @@ export default class Git implements GitRefResolvingInterface {
+   gitUrl: GitUrl;
+ 
+   /**
+-   * npm URLs contain a 'git+' scheme prefix, which is not understood by git.
++   * npm URLs contain a 'git+' scheme prefix or '+git' scheme suffix, which is not understood by git.
+    * git "URLs" also allow an alternative scp-like syntax, so they're not standard URLs.
+    */
+   static npmUrlToGitUrl(npmUrl: string): GitUrl {
+-    npmUrl = removePrefix(npmUrl, GIT_PROTOCOL_PREFIX);
++    npmUrl = npmUrl.replace(GIT_PROTOCOL_FRAGMENT, '');
+ 
+     let parsed = url.parse(npmUrl);
+     const expander = parsed.protocol && SHORTHAND_SERVICES[parsed.protocol];
+
+From 7cbc1dfbd9e815975e8b259be75063f4303b7dd3 Mon Sep 17 00:00:00 2001
+From: patryk <pmusiala94@gmail.com>
+Date: Thu, 1 Jul 2021 23:10:45 +0200
+Subject: [PATCH 2/2] Update CHANGELOG.md
+
+---
+ CHANGELOG.md | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index e94dea4e8a..e8d80c6622 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -2,6 +2,10 @@
+ <!-- -->
+ Please add one entry in this file for each change in Yarn's behavior. Use the same format for all entries, including the third-person verb. Make sure you don't add more than one line of text to keep it clean. Thanks!
+ 
++- Protocols with +git (e.g. ssh+git) will be properly handled for npm urls
++
++  [#8657](https://github.com/yarnpkg/yarn/pull/8657) - [**Patryk Musiala**](https://github.com/pmusiala)
++
+ ## 1.22.10 (and prior)
+ 
+ - Tweak the preinstall check to not cause errors when Node is installed as root (as a downside, it won't run at all on Windows, which should be an acceptable tradeoff): https://github.com/yarnpkg/yarn/issues/8358
+@@ -63,7 +67,7 @@ Those versions didn't contain any changes and were just triggered by our infra w
+ - Allows some dots in binary names again
+ 
+   [#7811](https://github.com/yarnpkg/yarn/pull/7811) - [**Valery Bugakov**](https://github.com/valerybugakov)
+-  
++
+ - Better error handling on `yarn set version`
+ 
+   [#7848](https://github.com/yarnpkg/yarn/pull/7848) - [**Nick Olinger**](https://github.com/olingern)
+@@ -71,7 +75,7 @@ Those versions didn't contain any changes and were just triggered by our infra w
+ - Passes arguments following `--` when running a workspace script (`yarn workspace pkg run command -- arg`)
+ 
+   [#7776](https://github.com/yarnpkg/yarn/pull/7776) - [**Jeff Valore**](https://twitter.com/rally25rs)
+-  
++
+ - Fixes an issue where the archive paths were incorrectly sanitized
+ 
+   [#7831](https://github.com/yarnpkg/yarn/pull/7831) - [**Maël Nison**](https://twitter.com/arcanis)
+@@ -93,7 +97,7 @@ Those versions didn't contain any changes and were just triggered by our infra w
+ - Implements `yarn init --install <version>`
+ 
+   [#7723](https://github.com/yarnpkg/yarn/pull/7723) - [**Maël Nison**](https://twitter.com/arcanis)
+-  
++
+ ## 1.19.2
+ 
+ - Folders like `.cache` won't be pruned from the `node_modules` after each install.
