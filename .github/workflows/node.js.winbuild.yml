@@ -29,5 +29,5 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: yarn-installer
-        path: artifacts
+        path: artifacts/*.msi
 
