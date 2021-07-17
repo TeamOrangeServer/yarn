@@ -4,6 +4,8 @@ name: Node.js Build
 on:
   push:
     branches: [ rei-yarn ]
+  pull_request:
+    branches: [ rei-yarn ]
 jobs:
   build:
     runs-on: ubuntu-latest
