@@ -20,6 +20,10 @@ jobs:
         cache: 'yarn'
     - run: yarn install --frozen-lockfile
     - run: ./scripts/set-dev-version.js
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1.77.0
+      with:
+        ruby-version: 2.7
     - run: ./scripts/bootstrap-env-ubuntu.sh
     - run: yarn run build
     - run: yarn run build-dist
