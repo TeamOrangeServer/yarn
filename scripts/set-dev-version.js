@@ -23,7 +23,7 @@ const formattedDate =
 
 // Remove any existing suffix before appending the date
 const version =
-  packageManifest.version.replace(/\-(.+)$/, '') + '-' + formattedDate;
+  packageManifest.version + '-' + formattedDate;
 
 packageManifest.version = version;
 fs.writeFileSync(
