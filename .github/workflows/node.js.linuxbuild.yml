@@ -28,5 +28,6 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: yarn
-        path: artifacts
-
+        path: |
+          artifacts/*.deb
+          artifacts/*.rpm
