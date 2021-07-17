@@ -21,6 +21,7 @@ jobs:
     - run: yarn install --frozen-lockfile
     - run: ./scripts/set-dev-version.js
     - run: yarn run build
+    - run: yarn run build-bundle
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v1
     - run: yarn run build-win-installer
