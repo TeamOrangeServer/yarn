@@ -1,0 +1,62 @@
+From 6ca406ec28c32003d7fe9a35f31bbaee1fe391fe Mon Sep 17 00:00:00 2001
+From: Guido Falsi <mad@madpilot.net>
+Date: Fri, 15 May 2020 15:15:10 +0200
+Subject: [PATCH 1/2] On FreeBSD it is possible for a few filesystems (FFS and
+ ZFS) to read(2) a directory, getting some binary data representing it.
+
+Code in yarn assumes the OS returns EISDIR when reading a directory. I added a fix which checks if the file is actually a directory before reading it, which should work everywhere.
+---
+ src/util/rc.js | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/src/util/rc.js b/src/util/rc.js
+index 2e167ca214..d9d51e8df2 100644
+--- a/src/util/rc.js
++++ b/src/util/rc.js
+@@ -1,6 +1,6 @@
+ /* @flow */
+ 
+-import {readFileSync} from 'fs';
++import {readFileSync, statSync} from 'fs';
+ import * as path from 'path';
+ import {CONFIG_DIRECTORY} from '../constants';
+ 
+@@ -66,6 +66,11 @@ function parseRcPaths(paths: Array<string>, parser: Function): Object {
+     {},
+     ...paths.map(path => {
+       try {
++        if (statSync(path).isDirectory()) {
++          const e = new Error();
++          e.code = 'EISDIR';
++          throw e;
++        }
+         return parser(readFileSync(path).toString(), path);
+       } catch (error) {
+         if (error.code === 'ENOENT' || error.code === 'EISDIR') {
+
+From 39f12de8caa6cec3a07bde2b35d3a91a9a564f0a Mon Sep 17 00:00:00 2001
+From: Guido Falsi <mad@madpilot.net>
+Date: Sat, 16 May 2020 17:37:25 +0200
+Subject: [PATCH 2/2] Simplify patch. When a directory is found, directly
+ return an empty object instead of throwing an error causing the roundtrip
+ through catch.
+
+---
+ src/util/rc.js | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/src/util/rc.js b/src/util/rc.js
+index d9d51e8df2..c961088b43 100644
+--- a/src/util/rc.js
++++ b/src/util/rc.js
+@@ -67,9 +67,7 @@ function parseRcPaths(paths: Array<string>, parser: Function): Object {
+     ...paths.map(path => {
+       try {
+         if (statSync(path).isDirectory()) {
+-          const e = new Error();
+-          e.code = 'EISDIR';
+-          throw e;
++          return {};
+         }
+         return parser(readFileSync(path).toString(), path);
+       } catch (error) {
