@@ -22,4 +22,4 @@ jobs:
         cache: 'yarn'
     - run: yarn install
     - run: yarn run build
-    - run: yarn test-only --maxWorkers 3
+    - run: yarn run test-only --maxWorkers 3
