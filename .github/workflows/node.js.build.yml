@@ -22,9 +22,9 @@ jobs:
     - run: ./scripts/set-dev-version.js
     - run: yarn run build
     - run: yarn run build-dist
-    - name: Archive production artifacts
+    - name: Archive develop artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: develop artifacts
+        name: yarn
         path: artifacts
 
