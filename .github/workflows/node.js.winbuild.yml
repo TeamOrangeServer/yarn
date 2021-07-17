@@ -21,6 +21,8 @@ jobs:
     - run: yarn install --frozen-lockfile
     - run: ./scripts/set-dev-version.js
     - run: yarn run build
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1
     - run: yarn run build-win-installer
     - name: Archive develop installer
       uses: actions/upload-artifact@v2
