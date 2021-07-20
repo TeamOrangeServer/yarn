@@ -38,7 +38,7 @@ const emoji = require('node-emoji');
 const invariant = require('invariant');
 const path = require('path');
 const semver = require('semver');
-const uuid = require('uuid');
+const {v4: uuidv4} = require('uuid');
 const ssri = require('ssri');
 
 const ONE_DAY = 1000 * 60 * 60 * 24;
@@ -368,7 +368,7 @@ export class Install {
         }
         const virtualDependencyManifest: Manifest = {
           _uid: '',
-          name: `workspace-aggregator-${uuid.v4()}`,
+          name: `workspace-aggregator-${uuidv4()}`,
           version: '1.0.0',
           _registry: 'npm',
           _loc: workspacesRoot,

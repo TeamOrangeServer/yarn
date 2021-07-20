@@ -35,7 +35,7 @@ import semver from 'semver';
 
 const invariant = require('invariant');
 const path = require('path');
-const uuid = require('uuid');
+const {v4: uuidv4} = require('uuid');
 const ssri = require('ssri');
 const nodeVersion = process.versions.node.split('-')[0];
 
@@ -111,7 +111,7 @@ class ImportResolver extends BaseResolver {
     info._remote = {
       type: 'copy',
       registry: this.registry,
-      hash: `${uuid.v4()}-${new Date().getTime()}`,
+      hash: `${uuidv4()}-${new Date().getTime()}`,
       reference: loc,
     };
     return info;
