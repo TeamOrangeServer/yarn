@@ -30,14 +30,13 @@ chmod +x artifacts/*.js
 if (( node_version > 4 )); then
   [[ "$version" == "$(node artifacts/yarn-$version.js --version)" ]] || exit 1
 fi
-[[ "$version" == "$(node artifacts/yarn-legacy-$version.js --version)" ]] || exit 1
+[[ "$version" == "$(node artifacts/yarn-$version.js --version)" ]] || exit 1
 
 cp package.json dist/
 cp README.md dist/
 cp LICENSE dist/
-# Only use the legacy version for NPM builds so we are compatible
-# with any Node >= 4 and still small in terms of size.
-cp artifacts/yarn-legacy-$version.js dist/lib/cli.js
+# drop old Node.js.
+cp artifacts/yarn-$version.js dist/lib/cli.js
 cp bin/{yarn.js,yarn,yarnpkg,*.cmd} dist/bin/
 cp scripts/preinstall.js dist/preinstall.js
 chmod +x dist/bin/*
