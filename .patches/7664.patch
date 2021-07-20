@@ -1,0 +1,94 @@
+From 0b02497fc48eddce02c1a683a28dca8f4ac9bc37 Mon Sep 17 00:00:00 2001
+From: Tommi Vainikainen <tommi.vainikainen@kyyti.com>
+Date: Fri, 1 Nov 2019 20:18:23 +0200
+Subject: [PATCH 1/2] Resolve tarball name from GitHub Package Registry
+
+---
+ __tests__/fetchers.js           | 22 ++++++++++++++++++++++
+ src/fetchers/tarball-fetcher.js |  5 ++++-
+ 2 files changed, 26 insertions(+), 1 deletion(-)
+
+diff --git a/__tests__/fetchers.js b/__tests__/fetchers.js
+index 5c95c6af7f..00ea6d2c47 100644
+--- a/__tests__/fetchers.js
++++ b/__tests__/fetchers.js
+@@ -353,6 +353,28 @@ test('TarballFetcher.fetch properly stores tarball for scoped package resolved f
+   expect(fetcher.getTarballMirrorPath()).toBe(path.join(offlineMirrorDir, '@exponent-configurator-1.0.2.tgz'));
+ });
+ 
++test('TarballFetcher.fetch properly stores tarball for scoped package resolved from GitHub registry', async () => {
++  const dir = await mkdir('tarball-fetcher');
++  const offlineMirrorDir = await mkdir('offline-mirror');
++
++  const config = await Config.create();
++  config.registries.npm.config['yarn-offline-mirror'] = offlineMirrorDir;
++
++  const fetcher = new TarballFetcher(
++    dir,
++    {
++      type: 'tarball',
++      hash: 'abababababababababababababababababababab',
++      reference:
++        'https://npm.pkg.github.com/download/@scope/repository/1.0.0/abababababababababababababababababababababababababababababababab',
++      registry: 'npm',
++    },
++    config,
++  );
++
++  expect(fetcher.getTarballMirrorPath()).toBe(path.join(offlineMirrorDir, '@scope-repository-1.0.0.tgz'));
++});
++
+ test('TarballFetcher.fetch properly stores tarball for scoped package resolved from new  style URLs', async () => {
+   const dir = await mkdir('tarball-fetcher');
+   const offlineMirrorDir = await mkdir('offline-mirror');
+diff --git a/src/fetchers/tarball-fetcher.js b/src/fetchers/tarball-fetcher.js
+index 8d1a452262..89b3005bb2 100644
+--- a/src/fetchers/tarball-fetcher.js
++++ b/src/fetchers/tarball-fetcher.js
+@@ -69,12 +69,15 @@ export default class TarballFetcher extends BaseFetcher {
+       return null;
+     }
+ 
+-    const match = pathname.match(RE_URL_NAME_MATCH);
++    let match = pathname.match(RE_URL_NAME_MATCH);
+ 
+     let packageFilename;
+     if (match) {
+       const [, scope, tarballBasename] = match;
+       packageFilename = scope ? `${scope}-${tarballBasename}` : tarballBasename;
++    } else if ((match = pathname.match(/\/download\/(@[^/]+)\/([^@/]+)\/([0-9.]+)\/[^/]+$/))) {
++      const [, scope, repository, version] = match;
++      packageFilename = `${scope}-${repository}-${version}.tgz`;
+     } else {
+       // fallback to base name
+       packageFilename = path.basename(pathname);
+
+From f842354c08b529e9c4335a5072eacb2752890bce Mon Sep 17 00:00:00 2001
+From: Tommi Vainikainen <tommi.vainikainen@kyyti.com>
+Date: Fri, 1 Nov 2019 20:22:06 +0200
+Subject: [PATCH 2/2] Don't prune mirrored packages from GitHub Package
+ Registry
+
+When yarn-offline-mirror-pruning is set to true, mirrored tarball
+filename of package must be resolved from download URL to scoped
+tarball filename.
+---
+ src/cli/commands/install.js | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/cli/commands/install.js b/src/cli/commands/install.js
+index bbe044fc35..b7cfd5104d 100644
+--- a/src/cli/commands/install.js
++++ b/src/cli/commands/install.js
+@@ -910,6 +910,11 @@ export class Install {
+       const resolved = lockfile[dependency].resolved;
+       if (resolved) {
+         const basename = path.basename(resolved.split('#')[0]);
++        const match = resolved.match(/.*\/download\/(@[^/]+)\/([^@/]+)\/([0-9.]+)\/[^/]+$/);
++        if (match) {
++          const [, scope, repository, version] = match;
++          requiredTarballs.add(`${scope}-${repository}-${version}.tgz`);
++        }
+         if (dependency[0] === '@' && basename[0] !== '@') {
+           requiredTarballs.add(`${dependency.split('/')[0]}-${basename}`);
+         }
