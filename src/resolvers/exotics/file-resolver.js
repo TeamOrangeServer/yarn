@@ -3,7 +3,7 @@
 import path from 'path';
 
 import invariant from 'invariant';
-import uuid from 'uuid';
+import {v4 as uuidv4} from 'uuid';
 
 import type {Manifest} from '../../types.js';
 import type PackageRequest from '../../package-request.js';
@@ -75,7 +75,7 @@ export default class FileResolver extends ExoticResolver {
     manifest._remote = {
       type: 'copy',
       registry,
-      hash: `${uuid.v4()}-${new Date().getTime()}`,
+      hash: `${uuidv4()}-${new Date().getTime()}`,
       reference: loc,
     };
 
