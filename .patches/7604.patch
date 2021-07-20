@@ -1,0 +1,130 @@
+From dc059f737e5c05d6f516201e1d311d1352847790 Mon Sep 17 00:00:00 2001
+From: B Krishna Chaitanya <bkchaitan94@gmail.com>
+Date: Sun, 6 Oct 2019 09:47:38 +0530
+Subject: [PATCH 1/2] Handle  when present
+
+---
+ __tests__/registries/npm-registry.js | 26 +++++++++++++++++++++++++-
+ src/registries/npm-registry.js       |  3 ++-
+ 2 files changed, 27 insertions(+), 2 deletions(-)
+
+diff --git a/__tests__/registries/npm-registry.js b/__tests__/registries/npm-registry.js
+index 54ade142a0..9058909505 100644
+--- a/__tests__/registries/npm-registry.js
++++ b/__tests__/registries/npm-registry.js
+@@ -1,6 +1,6 @@
+ /* @flow */
+ 
+-import {resolve, join as pathJoin} from 'path';
++import {resolve, join as pathJoin, sep as pathSep} from 'path';
+ 
+ import NpmRegistry from '../../src/registries/npm-registry.js';
+ import {BufferReporter} from '../../src/reporters/index.js';
+@@ -836,6 +836,30 @@ describe('getPossibleConfigLocations', () => {
+       ]),
+     );
+   });
++
++  test('aware of NPM_CONFIG_GLOBALCONFIG directory when present', async () => {
++    const customrc = pathSep + pathJoin('tmp', 'customrc')
++    try {
++      process.env.NPM_CONFIG_GLOBALCONFIG = customrc
++      const testCwd = './project/subdirectory';
++      const {mockRequestManager, mockRegistries} = createMocks();
++      const reporter = new BufferReporter({verbose: true});
++      const npmRegistry = new NpmRegistry(testCwd, mockRegistries, mockRequestManager, reporter, true, []);
++      await npmRegistry.getPossibleConfigLocations('npmrc', reporter);
++
++      const logs = reporter.getBuffer().map(logItem => logItem.data);
++      expect(logs).toEqual(
++        expect.arrayContaining([
++          expect.stringContaining(JSON.stringify(customrc)),
++          expect.stringContaining(JSON.stringify(pathJoin('project', 'subdirectory', '.npmrc'))),
++          expect.stringContaining(JSON.stringify(pathJoin('project', '.npmrc'))),
++          expect.stringContaining(JSON.stringify(pathJoin(homeDir, '.npmrc'))),
++        ]),
++      );
++    } finally {
++      delete process.env.NPM_GLOBAL_GLOBALCONFIG
++    }
++  });
+ });
+ 
+ describe('checkOutdated functional test', () => {
+diff --git a/src/registries/npm-registry.js b/src/registries/npm-registry.js
+index 083b8c1bab..fc4492f849 100644
+--- a/src/registries/npm-registry.js
++++ b/src/registries/npm-registry.js
+@@ -258,9 +258,10 @@ export default class NpmRegistry extends Registry {
+     }
+ 
+     if (this.enableDefaultRc) {
+-      // npmrc --> ./.npmrc, ~/.npmrc, ${prefix}/etc/npmrc
++      // npmrc --> $NPM_CONFIG_GLOBALCONFIG, ./.npmrc, ~/.npmrc, ${prefix}/etc/npmrc
+       const localfile = '.' + filename;
+       possibles = possibles.concat([
++        [false, process.env.NPM_CONFIG_GLOBALCONFIG],
+         [false, path.join(this.cwd, localfile)],
+         [true, this.config.userconfig || path.join(userHome, localfile)],
+         [false, path.join(getGlobalPrefix(), 'etc', filename)],
+
+From 52afdea21078e08841b836a00446ee8a104b5630 Mon Sep 17 00:00:00 2001
+From: B Krishna Chaitanya <bkchaitan94@gmail.com>
+Date: Sun, 6 Oct 2019 12:33:31 +0530
+Subject: [PATCH 2/2] Fix formatting and linter warnings
+
+---
+ __tests__/registries/npm-registry.js | 6 +++---
+ src/registries/npm-registry.js       | 7 +++++--
+ 2 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/__tests__/registries/npm-registry.js b/__tests__/registries/npm-registry.js
+index 9058909505..da6e0a395f 100644
+--- a/__tests__/registries/npm-registry.js
++++ b/__tests__/registries/npm-registry.js
+@@ -838,9 +838,9 @@ describe('getPossibleConfigLocations', () => {
+   });
+ 
+   test('aware of NPM_CONFIG_GLOBALCONFIG directory when present', async () => {
+-    const customrc = pathSep + pathJoin('tmp', 'customrc')
++    const customrc = pathSep + pathJoin('tmp', 'customrc');
+     try {
+-      process.env.NPM_CONFIG_GLOBALCONFIG = customrc
++      process.env.NPM_CONFIG_GLOBALCONFIG = customrc;
+       const testCwd = './project/subdirectory';
+       const {mockRequestManager, mockRegistries} = createMocks();
+       const reporter = new BufferReporter({verbose: true});
+@@ -857,7 +857,7 @@ describe('getPossibleConfigLocations', () => {
+         ]),
+       );
+     } finally {
+-      delete process.env.NPM_GLOBAL_GLOBALCONFIG
++      delete process.env.NPM_GLOBAL_GLOBALCONFIG;
+     }
+   });
+ });
+diff --git a/src/registries/npm-registry.js b/src/registries/npm-registry.js
+index fc4492f849..8e253e5649 100644
+--- a/src/registries/npm-registry.js
++++ b/src/registries/npm-registry.js
+@@ -253,15 +253,18 @@ export default class NpmRegistry extends Registry {
+   async getPossibleConfigLocations(filename: string, reporter: Reporter): Promise<Array<[boolean, string, string]>> {
+     let possibles = [];
+ 
++    if (process.env.NPM_CONFIG_GLOBALCONFIG) {
++      possibles.push([false, process.env.NPM_CONFIG_GLOBALCONFIG]);
++    }
++
+     for (const rcFile of this.extraneousRcFiles.slice().reverse()) {
+       possibles.push([false, path.resolve(process.cwd(), rcFile)]);
+     }
+ 
+     if (this.enableDefaultRc) {
+-      // npmrc --> $NPM_CONFIG_GLOBALCONFIG, ./.npmrc, ~/.npmrc, ${prefix}/etc/npmrc
++      // npmrc --> ./.npmrc, ~/.npmrc, ${prefix}/etc/npmrc
+       const localfile = '.' + filename;
+       possibles = possibles.concat([
+-        [false, process.env.NPM_CONFIG_GLOBALCONFIG],
+         [false, path.join(this.cwd, localfile)],
+         [true, this.config.userconfig || path.join(userHome, localfile)],
+         [false, path.join(getGlobalPrefix(), 'etc', filename)],
