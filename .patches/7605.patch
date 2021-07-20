@@ -1,0 +1,46 @@
+From 5b7133dd1ee6a2aff882e8bf7fb2814cdc4947bc Mon Sep 17 00:00:00 2001
+From: B Krishna Chaitanya <bkchaitan94@gmail.com>
+Date: Sun, 6 Oct 2019 15:42:35 +0530
+Subject: [PATCH] Add support for gitlab shorthand URLs
+
+---
+ __tests__/util/git.js | 5 +++++
+ src/util/git.js       | 9 +++++++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/__tests__/util/git.js b/__tests__/util/git.js
+index ede805ec8b..decafb2ffe 100644
+--- a/__tests__/util/git.js
++++ b/__tests__/util/git.js
+@@ -79,6 +79,11 @@ test('npmUrlToGitUrl', () => {
+     hostname: 'github.com',
+     repository: 'ssh://git@github.com/npm-opam/ocamlfind',
+   });
++  expect(Git.npmUrlToGitUrl('gitlab:npm-opam/ocamlfind.git#v1.2.3')).toEqual({
++    protocol: 'ssh:',
++    hostname: 'gitlab.com',
++    repository: 'ssh://git@gitlab.com/npm-opam/ocamlfind.git',
++  });
+   expect(Git.npmUrlToGitUrl('git+file:../ocalmfind.git')).toEqual({
+     protocol: 'file:',
+     hostname: null,
+diff --git a/src/util/git.js b/src/util/git.js
+index e68d7afc24..593ee9acc8 100644
+--- a/src/util/git.js
++++ b/src/util/git.js
+@@ -54,6 +54,15 @@ const SHORTHAND_SERVICES: {[key: string]: url.parse} = map({
+     hostname: 'github.com',
+     pathname: `/${parsedUrl.hostname}${parsedUrl.pathname}`,
+   }),
++  'gitlab:': parsedUrl => ({
++    ...parsedUrl,
++    slashes: true,
++    auth: 'git',
++    protocol: SSH_PROTOCOL,
++    host: 'gitlab.com',
++    hostname: 'gitlab.com',
++    pathname: `/${parsedUrl.hostname}${parsedUrl.pathname}`,
++  }),
+   'bitbucket:': parsedUrl => ({
+     ...parsedUrl,
+     slashes: true,
