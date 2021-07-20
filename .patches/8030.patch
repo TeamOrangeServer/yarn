@@ -1,0 +1,52 @@
+From 276702a032a1f42c0887d0a67c7faac6cbc98163 Mon Sep 17 00:00:00 2001
+From: Peter Dave Hello <hsu@peterdavehello.org>
+Date: Tue, 31 Mar 2020 20:08:35 +0800
+Subject: [PATCH] feature(autoclean): Include more CI configs in default
+ .yarnclean
+
+---
+ CHANGELOG.md                  | 6 ++++++
+ src/cli/commands/autoclean.js | 6 ++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 8030cbb91a..351b641f7f 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -2,6 +2,12 @@
+ 
+ Please add one entry in this file for each change in Yarn's behavior. Use the same format for all entries, including the third-person verb. Make sure you don't add more than one line of text to keep it clean. Thanks!
+ 
++## Master
++
++- Include more CI configs in default .yarnclean
++
++  [#8030](https://github.com/yarnpkg/yarn/pull/8030) - [**Peter Dave Hello**](https://github.com/PeterDaveHello)
++
+ ## 1.22.1
+ 
+ - Prevents `yarn-path` from exiting before its child exited
+diff --git a/src/cli/commands/autoclean.js b/src/cli/commands/autoclean.js
+index 805125e9a5..a926b8edc3 100644
+--- a/src/cli/commands/autoclean.js
++++ b/src/cli/commands/autoclean.js
+@@ -42,6 +42,8 @@ Gruntfile.js
+ 
+ # configs
+ appveyor.yml
++azure-pipelines.yml
++bitbucket-pipelines.yml
+ circle.yml
+ codeship-services.yml
+ codeship-steps.yml
+@@ -55,6 +57,10 @@ wercker.yml
+ .flowconfig
+ .documentup.json
+ .yarn-metadata.json
++.circleci
++.drone.yml
++.github
++.gitlab-ci.yml
+ .travis.yml
+ 
+ # misc

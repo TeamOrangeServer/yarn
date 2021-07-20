@@ -12,6 +12,10 @@ Please add one entry in this file for each change in Yarn's behavior. Use the sa
 
   [#8093](https://github.com/yarnpkg/yarn/pull/8093) - [Dan Bjorge](https://github.com/dbjorge)
 
+- Include more CI configs in default .yarnclean
+
+  [#8030](https://github.com/yarnpkg/yarn/pull/8030) - [**Peter Dave Hello**](https://github.com/PeterDaveHello)
+
 ## Master
 
 - Passes arguments following `--` when running a workspace script (`yarn workspace pkg run command -- arg`)
