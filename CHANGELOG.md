@@ -7,6 +7,11 @@ Please add one entry in this file for each change in Yarn's behavior. Use the sa
 - Protocols with +git (e.g. ssh+git) will be properly handled for npm urls
 
   [#8657](https://github.com/yarnpkg/yarn/pull/8657) - [**Patryk Musiala**](https://github.com/pmusiala)
+
+- Prevents libuv/E2BIG errors when a large NOTICE file exists
+
+  [#8093](https://github.com/yarnpkg/yarn/pull/8093) - [Dan Bjorge](https://github.com/dbjorge)
+
 ## Master
 
 - Passes arguments following `--` when running a workspace script (`yarn workspace pkg run command -- arg`)

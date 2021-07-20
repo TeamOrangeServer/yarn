@@ -1,0 +1,48 @@
+From 1bc1fa2440349f28bbb79c0f5d6ed1c3d945dd06 Mon Sep 17 00:00:00 2001
+From: Dan Bjorge <dan@dbjorge.net>
+Date: Fri, 1 May 2020 18:50:43 -0700
+Subject: [PATCH 1/2] Avoid setting npm_package_noticeText env var
+
+---
+ src/util/execute-lifecycle-script.js | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/util/execute-lifecycle-script.js b/src/util/execute-lifecycle-script.js
+index f5db0821b4..509ee1a0cc 100644
+--- a/src/util/execute-lifecycle-script.js
++++ b/src/util/execute-lifecycle-script.js
+@@ -21,6 +21,7 @@ export type LifecycleReturn = Promise<{
+ export const IGNORE_MANIFEST_KEYS: Set<string> = new Set([
+   'readme',
+   'notice',
++  'noticeText',
+   'licenseText',
+   'activationEvents',
+   'contributes',
+
+From b83deed83a9cf6c2350804b3de9a4359fc810884 Mon Sep 17 00:00:00 2001
+From: Dan Bjorge <dan@dbjorge.net>
+Date: Fri, 1 May 2020 18:50:51 -0700
+Subject: [PATCH 2/2] Note update in changelog
+
+---
+ CHANGELOG.md | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 8030cbb91a..b3965e34f5 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -2,6 +2,12 @@
+ 
+ Please add one entry in this file for each change in Yarn's behavior. Use the same format for all entries, including the third-person verb. Make sure you don't add more than one line of text to keep it clean. Thanks!
+ 
++## Master
++
++- Prevents libuv/E2BIG errors when a large NOTICE file exists
++
++  [#8093](https://github.com/yarnpkg/yarn/pull/8093) - [Dan Bjorge](https://github.com/dbjorge)
++
+ ## 1.22.1
+ 
+ - Prevents `yarn-path` from exiting before its child exited
